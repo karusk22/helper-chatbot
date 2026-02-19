@@ -10,11 +10,7 @@ export default function ChatMessage({ message }: { message: UIMessage }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[100%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-          isUser
-            ? 'bg-foreground text-background rounded-br-md'
-            : 'bg-zinc-100 dark:bg-zinc-800 rounded-bl-md'
-        }`}
+        className={`max-w-[100%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap `}
       >
         
         <MarkdownPreview source={text} style={{padding:16}}/>

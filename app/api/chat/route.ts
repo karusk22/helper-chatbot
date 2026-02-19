@@ -1,49 +1,48 @@
 import { streamText, UIMessage, convertToModelMessages } from 'ai';
 import { google } from '@ai-sdk/google';
-// import { tools } from './tools';
+import { tools } from './tools';
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
-  
-  // 1. Live Data - Added 'resumeProjects' for personalized grilling
-  const userContext = {
-    currentTime: new Date().toLocaleString(),
-    major: "Computer Science",
-    techStack: "React, FastAPI, PostgreSQL, MongoDB, and Java",
-    currentFocus: "Full-stack web development and Machine Learning",
-    resumeProjects: "Duplyzer (ML Plagiarism Checker), Sandhai (Agri-Marketplace), Clinical LLM Agent"
-  };
+  const { messages, targetCompany, targetRole, techStack }: { 
+    messages: UIMessage[];
+    targetCompany?: string;
+    targetRole?: string;
+    techStack?: string;
+  } = await req.json();
 
-  // 2. Format it into a clean string for the LLM
+  //TODO TASK 1
+  // 1. Dynamic Candidate Profile
   const contextString = `
-  [LIVE CONTEXT]
-  Time: ${userContext.currentTime}
-  Major: ${userContext.major}
-  Tech Stack: ${userContext.techStack}
-  Current Focus: ${userContext.currentFocus}
-  Key Projects: ${userContext.resumeProjects}
+  [CANDIDATE PROFILE]
+  Target Company: ${targetCompany || 'General Tech'}
+  Role Applied For: ${targetRole || 'Software Engineer'}
+  Tech Stack: ${techStack || 'Not specified'}
   `;
-  
-  // 3. TASK 1: New System Prompt for Interview Prep
-  const systemInstructions = `You are a highly precise, minimalist Technical Interview Prep & Revision Assistant. 
+
+  // 2. The Welcoming but Rigorous Interview Instructions
+  const systemInstructions = `You are a professional and encouraging Technical Interview Assistant. Your goal is to conduct mock interviews and provide rapid revision for any software engineering candidate.
 
 [CORE RULES]
-1. ZERO FLUFF: No greetings or pleasantries. Start immediately with actionable interview insights or questions.
-2. COMPANY FOCUS: When a user mentions a specific company, instantly outline its typical interview loop (e.g., FAANG DSA focus vs. startup system design) and its core behavioral principles.
-3. TECH STACK & PROJECT GRILLING: Use the [LIVE CONTEXT] to tailor your questions. Challenge the user on their specific projects—ask about the architecture, scaling challenges, or database schemas used.
-4. RAPID REVISION: When asked to revise a topic, provide 3 to 5 concise bullet points covering only advanced concepts, trade-offs, and common interview "gotchas" (e.g., database indexing strategies, React state rendering, FastAPI async quirks).
-5. TONE: Act as a strict, senior engineering hiring manager. Be direct, factual, and constructively challenging.`;
+1. WELCOMING INTRODUCTION: Always start the conversation with a polite, encouraging greeting. Introduce yourself as their interviewer and ask if they are ready to begin their session for the target company.
+2. COMPANY-SPECIFIC FOCUS: Tailor all questions to the candidate's target company. 
+   - Example: If Amazon, ask behavioral questions tied to Leadership Principles + System Design.
+   - Example: If Google/Meta, focus heavily on optimized Data Structures, Algorithms (Big-O), and edge cases.
+   - Example: If a Startup, focus on practical framework knowledge, deployment, and moving fast.
+3. RIGOROUS GRILLING: Once the interview starts, critique their answers like a senior engineer. Point out inefficiencies, missing edge cases, or better architectural approaches, but maintain a supportive undertone.
+4. RAPID REVISION: If asked to revise a topic, provide exactly 3 to 5 bullet points covering ONLY common interview "gotchas", trade-offs, and core formulas. Do not teach basic definitions.
+5. TONE: Professional, welcoming at first, but highly analytical and factual during the technical deep-dive.`;
 
+  // Merge the context and instructions
   const systemPrompt = `${contextString}\n\n${systemInstructions}`;
-  
+
   const result = streamText({
     model: google('gemini-2.5-flash'),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
 
     //TODO TASK 2 - Tool Calling
-    // tools,            
-    // maxSteps: 5,      
+    // tools,            // Uncomment to enable tool calling
+    // maxSteps: 5,      // Allow multi-step tool use (model calls tool → gets result → responds)
   });
 
   return result.toUIMessageStreamResponse();
